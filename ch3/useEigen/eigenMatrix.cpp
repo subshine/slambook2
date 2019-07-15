@@ -79,8 +79,8 @@ int main(int argc, char **argv) {
   // 特征值
   // 实对称矩阵可以保证对角化成功
   SelfAdjointEigenSolver<Matrix3d> eigen_solver(matrix_33.transpose() * matrix_33);
-  cout << "Eigen values = \n" << eigen_solver.eigenvalues() << endl;
-  cout << "Eigen vectors = \n" << eigen_solver.eigenvectors() << endl;
+  cout << "Eigen values = \n" << eigen_solver.eigenvalues() << endl;//特征值
+  cout << "Eigen vectors = \n" << eigen_solver.eigenvectors() << endl;//特征向量
 
   // 解方程
   // 我们求解 matrix_NN * x = v_Nd 这个方程
