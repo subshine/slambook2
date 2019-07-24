@@ -21,7 +21,7 @@ int main(int argc, char **argv) {
   for (int v = 0; v < rows; v++) {
     for (int u = 0; u < cols; u++) {
       // 按照公式，计算点(u,v)对应到畸变图像中的坐标(u_distorted, v_distorted)
-      double x = (u - cx) / fx, y = (v - cy) / fy;
+      double x = (u - cx) / fx, y = (v - cy) / fy;//计算归一化坐标
       double r = sqrt(x * x + y * y);
       double x_distorted = x * (1 + k1 * r * r + k2 * r * r * r * r) + 2 * p1 * x * y + p2 * (r * r + 2 * x * x);
       double y_distorted = y * (1 + k1 * r * r + k2 * r * r * r * r) + p1 * (r * r + 2 * y * y) + 2 * p2 * x * y;
