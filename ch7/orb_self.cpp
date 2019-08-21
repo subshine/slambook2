@@ -9,26 +9,27 @@
 
 using namespace std;
 
-// global variables
+// 全局变量
 string first_file = "./1.png";
 string second_file = "./2.png";
 
 // 32 bit unsigned int, will have 8, 8x32=256
-typedef vector<uint32_t> DescType; // Descriptor type
+typedef vector<uint32_t> DescType; // 结构体定义描述子类型
 
-/**
- * compute descriptor of orb keypoints
- * @param img input image
+/**提取ORB特征函数声明
+ * compute descriptor of orb keypoints   计算orb关键点的描述子
+ * @param img input image 输入图像
  * @param keypoints detected fast keypoints
  * @param descriptors descriptors
  *
  * NOTE: if a keypoint goes outside the image boundary (8 pixels), descriptors will not be computed and will be left as
  * empty
+ * 如果关键点超出图像边界,描述子将不会计算或者省略为空
  */
 void ComputeORB(const cv::Mat &img, vector<cv::KeyPoint> &keypoints, vector<DescType> &descriptors);
 
-/**
- * brute-force match two sets of descriptors
+/**暴力匹配函数声明
+ * brute-force match two sets of descriptors暴力匹配两个描述子
  * @param desc1 the first descriptor
  * @param desc2 the second descriptor
  * @param matches matches of two images
@@ -38,14 +39,17 @@ void BfMatch(const vector<DescType> &desc1, const vector<DescType> &desc2, vecto
 int main(int argc, char **argv) {
 
   // load image
-  cv::Mat first_image = cv::imread(first_file, 0);
+  cv::Mat first_image = cv::imread(first_file, 0);//以灰度图读入
   cv::Mat second_image = cv::imread(second_file, 0);
+  //imshow("hah",first_image);
+  //cvWaitKey(0);
   assert(first_image.data != nullptr && second_image.data != nullptr);
 
   // detect FAST keypoints1 using threshold=40
   chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
   vector<cv::KeyPoint> keypoints1;
-  cv::FAST(first_image, keypoints1, 40);
+  cv::FAST(first_image, keypoints1, 40);//FAST算法检测角点
+  /*可以看看FAST算法，输入的图像是灰度图,关键点，阈值（阈值为中心像素的亮度值与邻域的像素的亮度的阈值）,可以使用非极大值抑制，效果没有多大改变*/
   vector<DescType> descriptor1;
   ComputeORB(first_image, keypoints1, descriptor1);
 
@@ -344,6 +348,7 @@ void ComputeORB(const cv::Mat &img, vector<cv::KeyPoint> &keypoints, vector<Desc
   const int half_patch_size = 8;
   const int half_boundary = 16;
   int bad_points = 0;
+  //不这么懂
   for (auto &kp: keypoints) {
     if (kp.pt.x < half_boundary || kp.pt.y < half_boundary ||
         kp.pt.x >= img.cols - half_boundary || kp.pt.y >= img.rows - half_boundary) {
