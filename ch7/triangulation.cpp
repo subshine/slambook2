@@ -3,19 +3,20 @@
 // #include "extra.h" // used in opencv2
 using namespace std;
 using namespace cv;
-
+int b=0;
+/***********找特征点***********************************/
 void find_feature_matches(
   const Mat &img_1, const Mat &img_2,
   std::vector<KeyPoint> &keypoints_1,
   std::vector<KeyPoint> &keypoints_2,
   std::vector<DMatch> &matches);
-
+/***************2D->2D相机位姿估计********************/
 void pose_estimation_2d2d(
   const std::vector<KeyPoint> &keypoints_1,
   const std::vector<KeyPoint> &keypoints_2,
   const std::vector<DMatch> &matches,
   Mat &R, Mat &t);
-
+/**************三角化********************************/
 void triangulation(
   const vector<KeyPoint> &keypoint_1,
   const vector<KeyPoint> &keypoint_2,
@@ -57,22 +58,25 @@ int main(int argc, char **argv) {
   vector<Point3d> points;
   triangulation(keypoints_1, keypoints_2, matches, R, t, points);
 
-  //-- 验证三角化点与特征点的重投影关系
+  //-- 验证三角化点与特征点的重投影关系(pt1_cam像素坐标系转换到相机坐标系（归一化平面）)pt1_cam_3d三角测量测出的相机坐标系
   Mat K = (Mat_<double>(3, 3) << 520.9, 0, 325.1, 0, 521.0, 249.7, 0, 0, 1);
-  Mat img1_plot = img_1.clone();
+  Mat img1_plot = img_1.clone();//clone OPencv赋值函数，被赋值的矩阵和赋值矩阵之间空间独立，不共享同一空间
+  //重载运算符“=”，被赋值的矩阵和赋值矩阵之间空间共享，改变任何一个矩阵的值会同时影响到另一个矩阵
   Mat img2_plot = img_2.clone();
   for (int i = 0; i < matches.size(); i++) {
     // 第一个图
     float depth1 = points[i].z;
-    cout << "depth: " << depth1 << endl;
+    cout << "depth1: " << depth1 << endl;
     Point2d pt1_cam = pixel2cam(keypoints_1[matches[i].queryIdx].pt, K);
     cv::circle(img1_plot, keypoints_1[matches[i].queryIdx].pt, 2, get_color(depth1), 2);
-
+    //circle参数说明（要操作的图像，圆心，半径，圆的颜色，圆的轮廓的厚度）
     // 第二个图
-    Mat pt2_trans = R * (Mat_<double>(3, 1) << points[i].x, points[i].y, points[i].z) + t;
+    Mat pt2_trans = R * (Mat_<double>(3, 1) << points[i].x, points[i].y, points[i].z) + t;//通过旋转和平移计算坐标
     float depth2 = pt2_trans.at<double>(2, 0);
     cv::circle(img2_plot, keypoints_2[matches[i].trainIdx].pt, 2, get_color(depth2), 2);
+    cout<<"depth2:"<<depth2<<endl;
   }
+  cout<<"******************************"<<b<<endl;
   cv::imshow("img 1", img1_plot);
   cv::imshow("img 2", img2_plot);
   cv::waitKey();
@@ -127,7 +131,7 @@ void find_feature_matches(const Mat &img_1, const Mat &img_2,
   }
 }
 
-void pose_estimation_2d2d(
+void pose_estimation_2d2d(                       //求解R，t
   const std::vector<KeyPoint> &keypoints_1,
   const std::vector<KeyPoint> &keypoints_2,
   const std::vector<DMatch> &matches,
@@ -154,17 +158,17 @@ void pose_estimation_2d2d(
   recoverPose(essential_matrix, points1, points2, R, t, focal_length, principal_point);
 }
 
-void triangulation(
+void triangulation(                  //三角化
   const vector<KeyPoint> &keypoint_1,
   const vector<KeyPoint> &keypoint_2,
   const std::vector<DMatch> &matches,
   const Mat &R, const Mat &t,
   vector<Point3d> &points) {
-  Mat T1 = (Mat_<float>(3, 4) <<
+  Mat T1 = (Mat_<float>(3, 4) <<    //不进行旋转和平移的变换矩阵
     1, 0, 0, 0,
     0, 1, 0, 0,
     0, 0, 1, 0);
-  Mat T2 = (Mat_<float>(3, 4) <<
+  Mat T2 = (Mat_<float>(3, 4) <<    //2D->2D求出的R，t变换矩阵T
     R.at<double>(0, 0), R.at<double>(0, 1), R.at<double>(0, 2), t.at<double>(0, 0),
     R.at<double>(1, 0), R.at<double>(1, 1), R.at<double>(1, 2), t.at<double>(1, 0),
     R.at<double>(2, 0), R.at<double>(2, 1), R.at<double>(2, 2), t.at<double>(2, 0)
@@ -180,6 +184,7 @@ void triangulation(
 
   Mat pts_4d;
   cv::triangulatePoints(T1, T2, pts_1, pts_2, pts_4d);
+  cout<<"*******************************"<<pts_4d.size()<<endl;
 
   // 转换成非齐次坐标
   for (int i = 0; i < pts_4d.cols; i++) {
@@ -194,11 +199,11 @@ void triangulation(
   }
 }
 
-Point2f pixel2cam(const Point2d &p, const Mat &K) {
+Point2f pixel2cam(const Point2d &p, const Mat &K) {  //像素坐标转相机坐标
   return Point2f
     (
-      (p.x - K.at<double>(0, 2)) / K.at<double>(0, 0),
-      (p.y - K.at<double>(1, 2)) / K.at<double>(1, 1)
+      (p.x - K.at<double>(0, 2)) / K.at<double>(0, 0),//x-fx/cx
+      (p.y - K.at<double>(1, 2)) / K.at<double>(1, 1)//y-fy/cy
     );
 }
 
